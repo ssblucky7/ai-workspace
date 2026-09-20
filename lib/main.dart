@@ -24,6 +24,12 @@ import 'services/provider_config_service.dart';
 import 'services/secure_storage_service.dart';
 import 'theme/app_theme.dart';
 
+// JS interop for catching uncaught promise rejections on web is not used
+// because the PlatformDispatcher error handler catches most Dart errors.
+// The "M_ID" error appears to be a Flutter web internal issue that may
+// require Flutter framework fixes. Our existing error handlers provide
+// defense-in-depth.
+
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(
     () async {
@@ -47,8 +53,14 @@ Future<void> main() async {
           options: DefaultFirebaseOptions.currentPlatform,
         );
         firebaseConfigured = true;
-      } catch (error) {
+        debugPrint('Firebase initialized successfully');
+      } on FirebaseException catch (error) {
         firebaseInitError = error;
+        debugPrint('Firebase initialization failed: ${error.code} - ${error.message}');
+      } catch (error, stackTrace) {
+        firebaseInitError = error;
+        debugPrint('Firebase initialization error: $error');
+        debugPrint('Stack trace: $stackTrace');
       }
 
       final prefs = await SharedPreferences.getInstance();

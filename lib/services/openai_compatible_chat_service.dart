@@ -10,6 +10,17 @@ import '../models/ai_model_info.dart';
 import '../models/chat_message.dart';
 import 'chat_service.dart';
 
+/// Checks if an error is likely a CORS error from the browser.
+bool _isCorsError(Object error) {
+  final errorString = error.toString().toLowerCase();
+  return errorString.contains('cors') ||
+      errorString.contains('access-control-allow-origin') ||
+      errorString.contains('cross-origin') ||
+      errorString.contains('failed to fetch') ||
+      (error is http.ClientException &&
+          error.message.toLowerCase().contains('network'));
+}
+
 /// OpenAI-compatible chat adapter.
 ///
 /// Targets the de-facto standard `/chat/completions` + `/models` endpoints
@@ -262,12 +273,35 @@ Future<String> _request(Future<http.Response> Function() send) async {
   } on AIRequestException {
     rethrow;
   } on http.ClientException catch (error) {
+    // Check if this is a CORS error (common on web when the provider
+    // doesn't allow cross-origin requests from the app's domain).
+    if (_isCorsError(error)) {
+      throw const AIRequestException(
+        'The AI provider does not allow cross-origin requests from this '
+        'domain (CORS error). This is a server-side limitation — the '
+        'provider must enable CORS for the domain hosting this app. '
+        'Try using a provider that supports CORS, or use the app on Android '
+        'where this restriction does not apply.',
+        type: AIRequestFailureType.network,
+      );
+    }
     throw AIRequestException(
       'Could not reach the AI provider. Check the base URL and your network.',
       type: AIRequestFailureType.network,
       cause: error,
     );
   } catch (error) {
+    // Also check for CORS in generic errors (e.g., "Failed to fetch" on web).
+    if (_isCorsError(error)) {
+      throw const AIRequestException(
+        'The AI provider does not allow cross-origin requests from this '
+        'domain (CORS error). This is a server-side limitation — the '
+        'provider must enable CORS for the domain hosting this app. '
+        'Try using a provider that supports CORS, or use the app on Android '
+        'where this restriction does not apply.',
+        type: AIRequestFailureType.network,
+      );
+    }
     throw AIRequestException(
       'The AI request failed. Please try again.',
       type: AIRequestFailureType.unknown,

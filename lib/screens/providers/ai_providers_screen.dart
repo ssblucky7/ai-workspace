@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -198,6 +199,34 @@ class _AIProvidersScreenState extends State<AIProvidersScreen> {
 
     return Column(
       children: [
+        // CORS warning banner for web
+        if (kIsWeb)
+          Container(
+            width: double.infinity,
+            color: theme.colorScheme.errorContainer,
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: theme.colorScheme.onErrorContainer,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Web Limitation: Some AI providers block cross-origin '
+                    'requests (CORS). If "Test connection" or "Fetch models" '
+                    'fails, the provider must enable CORS for this domain. '
+                    'This works on Android without this restriction.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         if (providerState.error != null && providerState.providers.isNotEmpty)
           Padding(
             padding: const EdgeInsets.all(8),
