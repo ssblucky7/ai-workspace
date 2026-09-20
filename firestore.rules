@@ -1,0 +1,166 @@
+rules_version = '2';
+
+// AI Workspace — Firestore security rules.
+//
+// Model:
+//   users/{uid}
+//   users/{uid}/conversations/{conversationId}
+//   users/{uid}/conversations/{conversationId}/messages/{messageId}
+//   users/{uid}/providers/{providerId}
+//
+// Every read and write is scoped to the authenticated user's own UID path.
+// Raw API keys must never be stored in Firestore (see providers rule).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Accepts either a real timestamp or a field written with FieldValue.serverTimestamp().
+    function isWriteTimestamp(value) {
+      return value == request.time || value is timestamp;
+    }
+
+    match /users/{uid} {
+      allow get, list: if isOwner(uid);
+
+      allow create: if isOwner(uid)
+        && request.resource.data.uid is string
+        && request.resource.data.uid == uid
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() >= 1
+        && request.resource.data.fullName.size() <= 64
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 320
+        && isWriteTimestamp(request.resource.data.createdAt)
+        && isWriteTimestamp(request.resource.data.updatedAt);
+
+      allow update: if isOwner(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.fullName is string
+        && request.resource.data.fullName.size() >= 1
+        && request.resource.data.fullName.size() <= 64
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 320
+        && isWriteTimestamp(request.resource.data.updatedAt);
+
+      allow delete: if isOwner(uid);
+
+      // Conversations — the main CRUD resource, scoped under the owner's UID.
+      match /conversations/{conversationId} {
+        allow get, list: if isOwner(uid);
+
+        allow create: if isOwner(uid)
+          && request.resource.data.userId is string
+          && request.resource.data.userId == uid
+          && request.resource.data.title is string
+          && request.resource.data.title.size() >= 1
+          && request.resource.data.title.size() <= 120
+          && request.resource.data.lastMessage is string
+          && request.resource.data.lastMessage.size() <= 4000
+          && isWriteTimestamp(request.resource.data.createdAt)
+          && isWriteTimestamp(request.resource.data.updatedAt);
+
+        allow update: if isOwner(uid)
+          && resource.data.userId == uid
+          && request.resource.data.userId == uid
+          && request.resource.data.title is string
+          && request.resource.data.title.size() >= 1
+          && request.resource.data.title.size() <= 120
+          && request.resource.data.lastMessage is string
+          && request.resource.data.lastMessage.size() <= 4000
+          && isWriteTimestamp(request.resource.data.updatedAt);
+
+        allow delete: if isOwner(uid) && resource.data.userId == uid;
+
+        // Messages — each subcollection document needs its own explicit rules.
+        match /messages/{messageId} {
+          allow get, list: if isOwner(uid);
+
+          allow create: if isOwner(uid)
+            && request.resource.data.conversationId is string
+            && request.resource.data.conversationId == conversationId
+            && request.resource.data.role in ['user', 'assistant', 'system']
+            && request.resource.data.status in ['sending', 'sent', 'failed']
+            && request.resource.data.content is string
+            && request.resource.data.content.size() <= 32000
+            && isWriteTimestamp(request.resource.data.createdAt);
+
+          allow update: if isOwner(uid)
+            && resource.data.conversationId == conversationId
+            && request.resource.data.conversationId == conversationId
+            && request.resource.data.role in ['user', 'assistant', 'system']
+            && request.resource.data.status in ['sending', 'sent', 'failed']
+            && request.resource.data.content is string
+            && request.resource.data.content.size() <= 32000;
+
+          allow delete: if isOwner(uid)
+            && resource.data.conversationId == conversationId;
+        }
+      }
+
+      // AI provider metadata — non-secret fields only. Storing a raw API key
+      // here is rejected by these rules; keys live in local secure storage.
+      match /providers/{providerId} {
+        allow get, list: if isOwner(uid);
+
+        allow create: if isOwner(uid)
+          && !('apiKey' in request.resource.data)
+          && request.resource.data.userId is string
+          && request.resource.data.userId == uid
+          && request.resource.data.name is string
+          && request.resource.data.name.size() >= 1
+          && request.resource.data.name.size() <= 60
+          && request.resource.data.baseUrl is string
+          && request.resource.data.baseUrl.size() <= 300
+          && request.resource.data.baseUrl.matches('https?://.*')
+          && request.resource.data.selectedModel is string
+          && request.resource.data.selectedModel.size() <= 120
+          && request.resource.data.temperature is number
+          && request.resource.data.temperature >= 0
+          && request.resource.data.temperature <= 2
+          && request.resource.data.maxTokens is int
+          && request.resource.data.maxTokens >= 16
+          && request.resource.data.maxTokens <= 200000
+          && request.resource.data.isActive is bool
+          && (!('organizationId' in request.resource.data)
+              || request.resource.data.organizationId is string
+              || request.resource.data.organizationId == null)
+          && isWriteTimestamp(request.resource.data.createdAt)
+          && isWriteTimestamp(request.resource.data.updatedAt);
+
+        allow update: if isOwner(uid)
+          && resource.data.userId == uid
+          && request.resource.data.userId == uid
+          && !('apiKey' in request.resource.data)
+          && request.resource.data.name is string
+          && request.resource.data.name.size() >= 1
+          && request.resource.data.name.size() <= 60
+          && request.resource.data.baseUrl is string
+          && request.resource.data.baseUrl.size() <= 300
+          && request.resource.data.baseUrl.matches('https?://.*')
+          && request.resource.data.selectedModel is string
+          && request.resource.data.selectedModel.size() <= 120
+          && request.resource.data.temperature is number
+          && request.resource.data.temperature >= 0
+          && request.resource.data.temperature <= 2
+          && request.resource.data.maxTokens is int
+          && request.resource.data.maxTokens >= 16
+          && request.resource.data.maxTokens <= 200000
+          && request.resource.data.isActive is bool
+          && (!('organizationId' in request.resource.data)
+              || request.resource.data.organizationId is string
+              || request.resource.data.organizationId == null)
+          && isWriteTimestamp(request.resource.data.updatedAt);
+
+        allow delete: if isOwner(uid) && resource.data.userId == uid;
+      }
+    }
+  }
+}

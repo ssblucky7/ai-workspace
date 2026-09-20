@@ -1,0 +1,77 @@
+name: ai_workspace
+description: "AI Workspace — a Flutter + Firebase assignment application for managing AI conversations with user-configured providers."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# Android: versionName = build-name, versionCode = build-number.
+# iOS: CFBundleShortVersionString = build-name, CFBundleVersion = build-number.
+# Windows: major.minor.patch = build-name, build suffix = build-number.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  cloud_firestore: ^6.9.0
+  cupertino_icons: ^1.0.8
+  firebase_auth: ^6.6.1
+  firebase_core: ^4.14.0
+  flutter:
+    sdk: flutter
+  flutter_secure_storage: ^11.1.1
+  go_router: ^17.5.0
+  http: ^1.6.0
+  intl: ^0.20.3
+  provider: ^6.1.5+1
+  shared_preferences: ^2.5.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package contains a set of recommended lints to
+  # encourage good coding practices. Activated in analysis_options.yaml.
+  flutter_lints: ^6.0.0
+
+  # Icon generation (see tool/generate_app_icon.dart for the source artwork):
+  # image draws the original AI Workspace mark; flutter_launcher_icons
+  # materializes every platform size from it.
+  image: ^4.5.4
+  flutter_launcher_icons: ^0.14.4
+
+# Launcher icon configuration.
+# Source artwork: assets/icon/app_icon.png (1024x1024, generated).
+# Android: legacy mipmaps + adaptive icon (indigo background, white hub
+# foreground). Web: favicon + PWA icons (maskable included).
+flutter_launcher_icons:
+  android: true
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#5B5FE9"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
+    background_color: "#5B5FE9"
+    theme_color: "#5B5FE9"
+
+# path_provider_foundation is a macOS-only endorsed implementation of
+# path_provider. Versions >= 2.5.0 depend on package:objective_c, whose
+# native-asset build hook breaks Flutter builds on Windows machines whose
+# SDK or pub-cache paths contain a space (objective_c 9.6.0 fixes that but
+# is incompatible with this SDK's pinned `meta`). This app targets Android
+# and Web only, so pinning the pre-interop foundation implementation
+# removes the broken hook from the tree entirely.
+# Remove this override after upgrading to a Flutter SDK whose dependency
+# tree allows objective_c >= 9.6.0.
+dependency_overrides:
+  path_provider_foundation: 2.4.0
+
+# For information on the generic Dart part of this file, see
+# the following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # Ensures the Material Icons font is included with the application.
+  uses-material-design: true

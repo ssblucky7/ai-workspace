@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "442613986021",
+    "project_id": "aimchat-15b34",
+    "storage_bucket": "aimchat-15b34.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:442613986021:android:5acd6044303ec21651da0c",
+        "android_client_info": {
+          "package_name": "com.aiworkspace.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDduFS6n2VZICaZorxlra5-9uxmaTTCQkE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
